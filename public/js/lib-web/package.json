@@ -1,0 +1,26 @@
+{
+  "name": "@utoo/loader-runner-web",
+  "version": "4.3.0",
+  "description": "Web Worker compatible version of loader-runner",
+  "main": "index.js",
+  "browser": "index.js",
+  "web": "index.js",
+  "type": "commonjs",
+  "keywords": ["webpack", "loader", "web-worker", "browser"],
+  "author": "Tobias Koppers @sokra",
+  "license": "MIT",
+  "engines": {
+    "browser": ">=67"
+  },
+  "files": [
+    "*.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/webpack/loader-runner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/webpack/loader-runner/issues"
+  },
+  "homepage": "https://github.com/webpack/loader-runner#readme"
+} 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webpack Loader Runner Worker Demo</title>
+    <title>Simple Loader 测试 Demo</title>
     <style>
         * {
             margin: 0;
@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 800px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
@@ -110,16 +110,6 @@
         .btn-success:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
-        }
-
-        .btn-info {
-            background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
-            color: white;
-        }
-
-        .btn-info:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(23, 162, 184, 0.4);
         }
 
         .output {
@@ -233,29 +223,27 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔧 Webpack Loader Runner Worker Demo</h1>
-            <p>使用 Web Worker 运行 webpack loaders，体验非阻塞的文件处理</p>
+            <h1>🧪 CSS Loader 测试 Demo</h1>
+            <p>使用 Web Worker 和 loader-runner 测试从 UNPKG 自动加载的 css-loader</p>
         </div>
 
         <div class="content">
             <div class="info-box">
-                <h4>💡 什么是 Webpack Loader Runner Worker？</h4>
+                <h4>💡 这个 Demo 做什么？</h4>
                 <ul>
-                    <li>将 webpack loaders 处理放在 Web Worker 线程中执行</li>
-                    <li>避免 loader 处理阻塞主线程的 UI 渲染和用户交互</li>
-                    <li>支持 TypeScript、Babel、CSS 等各种 loader 组合</li>
+                    <li>在 Web Worker 中使用 loader-runner 执行 loader 转换</li>
+                    <li>自动从 UNPKG CDN 加载 css-loader 并处理 CSS 内容</li>
                     <li>通过消息传递机制与主线程通信，返回处理结果</li>
+                    <li>展示 loader 处理前后的 CSS 内容对比</li>
                 </ul>
             </div>
 
             <div class="demo-section">
-                <h3>📁 文件处理测试</h3>
+                <h3>🧪 CSS Loader 测试</h3>
                 <div id="status" class="status ready">状态: 准备就绪</div>
                 
                 <div class="button-group">
-                    <button class="btn btn-primary" onclick="processFile()">处理文件</button>
-                    <button class="btn btn-info" onclick="testLoaders()">测试 Loaders</button>
-                    <button class="btn btn-success" onclick="testSimpleLoader()">测试 Simple Loader</button>
+                    <button class="btn btn-primary" onclick="testCSSLoader()">测试 CSS Loader</button>
                     <button class="btn btn-danger" onclick="stopWorker()">停止 Worker</button>
                     <button class="btn btn-success" onclick="clearOutput()">清空输出</button>
                 </div>
@@ -264,12 +252,7 @@
                     <div id="progress" class="progress-fill"></div>
                 </div>
 
-                <div id="output" class="output">等待开始文件处理...</div>
-            </div>
-
-            <div class="demo-section">
-                <h3>📊 性能监控</h3>
-                <div id="performanceOutput" class="output">Worker 状态监控区域...</div>
+                <div id="output" class="output">等待开始测试...</div>
             </div>
         </div>
     </div>
