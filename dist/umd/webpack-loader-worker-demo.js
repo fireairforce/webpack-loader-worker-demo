@@ -48,18 +48,6 @@ var _wrapNativeSuper = (__webpack_require__(732)["default"]);
       var LoaderLoadingError = __nccwpck_require__(395);
       var url;
       module.exports = function loadLoader(loader, callback) {
-        // 检查是否有预加载的 loader 函数
-        if (loader.function) {
-          try {
-            // 从字符串重新创建函数
-            var loaderFunction = new Function('return ' + loader.function)();
-            var module = { default: loaderFunction };
-            return handleResult(loader, module, callback);
-          } catch (e) {
-            return callback(e);
-          }
-        }
-        
         if (loader.type === "module") {
           try {
             if (url === undefined) url = __nccwpck_require__(310);
@@ -135,9 +123,8 @@ var _wrapNativeSuper = (__webpack_require__(732)["default"]);
   var __nested_webpack_exports__ = {};
   (function () {
     var e = __nested_webpack_exports__;
-    // 在 Web Worker 环境中，我们不需要 fs.readFile
-    // var r = __nccwpck_require__(147);
-    // var n = r.readFile.bind(r);
+    var r = __nccwpck_require__(147);
+    var n = r.readFile.bind(r);
     var t = __nccwpck_require__(754);
     function utf8BufferToString(e) {
       var r = e.toString("utf-8");
@@ -7366,8 +7353,8 @@ function _transform() {
                 };
               }),
               context: loaderContext,
-              readResource: function readResource(resource, callback) {
-                callback(null, processedContent);
+              processResource: function processResource(loaderContext, resource, callback) {
+                callback(null, processedContent, null);
               }
             }, function (err, result) {
               if (err) {

@@ -2,6 +2,9 @@
 let worker = null;
 let isWorkerRunning = false;
 
+// 预加载的 loader 函数
+let simpleLoaderFunction = null;
+
 // DOM 元素
 const statusElement = document.getElementById('status');
 const outputElement = document.getElementById('output');
@@ -29,6 +32,36 @@ function clearOutput() {
 // 更新进度条
 function updateProgress(percent) {
     progressElement.style.width = `${percent}%`;
+}
+
+// 预加载 simple-loader
+async function preloadSimpleLoader() {
+    try {
+        addOutput('🔄 开始预加载 Simple Loader...');
+        
+        // 动态加载 simple-loader
+        const response = await fetch('simple-loader.js');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const loaderCode = await response.text();
+        addOutput(`📄 加载到 ${loaderCode.length} 字符的代码`);
+        
+        // 创建一个函数来执行 loader 代码
+        // 注意：这里我们需要创建一个安全的执行环境
+        const loaderModule = new Function('module', 'exports', loaderCode + '\nreturn module.exports;');
+        const module = { exports: {} };
+        simpleLoaderFunction = loaderModule(module, module.exports);
+        
+        addOutput('✅ Simple Loader 预加载成功');
+        addOutput(`🔧 Loader 类型: ${typeof simpleLoaderFunction}`);
+        return true;
+    } catch (error) {
+        addOutput(`❌ Simple Loader 预加载失败: ${error.message}`);
+        addOutput(`📋 错误详情: ${error.stack || '无堆栈信息'}`);
+        return false;
+    }
 }
 
 // 初始化 Web Worker
@@ -146,10 +179,8 @@ export default UserService;`;
 
     const loaders = [
         {
-            loader: 'babel-loader',
-            options: {
-                presets: ['@babel/preset-env', '@babel/preset-typescript']
-            }
+            loader: 'simple-loader',
+            options: {}
         }
     ];
 
@@ -191,6 +222,79 @@ function stopWorker() {
     }
 }
 
+// 测试 Simple Loader
+async function testSimpleLoader() {
+    if (isWorkerRunning) {
+        addOutput('⚠️ Worker 正在处理中，请稍候...');
+        return;
+    }
+
+    if (!worker) {
+        if (!initWorker()) {
+            return;
+        }
+    }
+
+    const testContent = `// 测试文件
+console.log("Hello from Simple Loader Test");
+const message: string = "这是一个 TypeScript 测试";
+console.log("消息:", message);
+
+// 测试 CSS 内容
+const cssContent = \`
+.button {
+    background: var(--primary-color);
+    color: white;
+    padding: 10px 20px;
+}
+\`;
+
+console.log("CSS 内容长度:", cssContent.length);`;
+
+    isWorkerRunning = true;
+    updateStatus('测试 Simple Loader...', 'working');
+    updateProgress(25);
+    addOutput('🧪 开始测试 Simple Loader...');
+    addOutput(`📄 测试内容长度: ${testContent.length} 字符`);
+
+    // 检查是否已预加载 simple-loader
+    if (!simpleLoaderFunction) {
+        addOutput('❌ Simple Loader 未预加载，请稍候...');
+        addOutput('🔄 尝试重新预加载...');
+        updateStatus('等待 Loader 加载', 'working');
+        
+        // 尝试重新预加载
+        const success = await preloadSimpleLoader();
+        if (!success) {
+            addOutput('❌ 重新预加载失败，无法继续测试');
+            updateStatus('加载失败', 'error');
+            return;
+        }
+    }
+    
+    addOutput(`🔧 使用预加载的 Loader: ${typeof simpleLoaderFunction}`);
+    addOutput(`📤 准备发送消息到 Worker...`);
+
+    worker.postMessage({
+        messageType: 'transform',
+        id: 'simple-test-' + Date.now(),
+        payload: [
+            testContent,
+            'simple-test.ts',
+            '',
+            [{ 
+                loader: 'simple-loader', 
+                options: {},
+                function: simpleLoaderFunction.toString() // 传递函数字符串
+            }],
+            false,
+            process.cwd || '/'
+        ]
+    });
+
+    updateProgress(50);
+}
+
 // 测试不同的 loader 组合
 function testLoaders() {
     if (isWorkerRunning) {
@@ -219,6 +323,13 @@ function testLoaders() {
             loaders: [
                 { loader: 'css-loader', options: {} },
                 { loader: 'postcss-loader', options: {} }
+            ]
+        },
+        {
+            name: 'Simple Loader Test',
+            content: 'console.log("Hello World");\nconst message: string = "Test";\nconsole.log(message);',
+            loaders: [
+                { loader: 'simple-loader', options: {} }
             ]
         }
     ];
@@ -281,6 +392,8 @@ document.addEventListener('DOMContentLoaded', function() {
     addOutput('🧪 点击"测试 Loaders"按钮运行多个测试用例');
     addOutput('📊 观察处理进度和结果输出');
     
+    // 预加载 simple-loader
+    preloadSimpleLoader();
     // 初始化 Worker
     initWorker();
 });
