@@ -37,7 +37,7 @@ function initWorker() {
     }
     
     try {
-        worker = new Worker('js/worker-2.js');
+        worker = new Worker('js/worker.js');
         addOutput('🚀 Web Worker 初始化成功');
         
         // 监听 Worker 消息
@@ -200,6 +200,94 @@ async function testCSSLoader() {
         
     } catch (error) {
         addOutput(`❌ 转换失败: ${error.message}`);
+        updateStatus('转换失败', 'error');
+        isWorkerRunning = false;
+        updateProgress(0);
+    }
+}
+
+// 测试 Less Loader
+async function testLessLoader() {
+    if (isWorkerRunning) {
+        addOutput('⚠️ Worker 正在处理中，请稍候...');
+        return;
+    }
+
+    if (!worker) {
+        if (!initWorker()) {
+            return;
+        }
+    }
+
+    const lessContent = `@primary-color: #007bff;
+@secondary-color: #6c757d;
+@border-radius: 5px;
+
+.button {
+    background: @primary-color;
+    color: white;
+    padding: 10px 20px;
+    border-radius: @border-radius;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+        background: darken(@primary-color, 10%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    background: linear-gradient(135deg, @primary-color 0%, @secondary-color 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
+    border-radius: @border-radius;
+    margin-bottom: 20px;
+}`;
+
+    isWorkerRunning = true;
+    updateStatus('开始 Less 转换...', 'working');
+    updateProgress(25);
+    addOutput('🧪 开始测试 Less Loader...');
+    addOutput(`📄 Less 内容长度: ${lessContent.length} 字符`);
+    addOutput('🔧 Worker 将使用内置的 less-loader 功能');
+
+    try {
+        // 直接开始转换，Worker 使用内置的 less-loader 功能
+        updateProgress(50);
+        
+        worker.postMessage({
+            messageType: 'transform',
+            id: 'less-test-' + Date.now(),
+            payload: [
+                lessContent,
+                'styles.less',
+                '',
+                [{ 
+                    loader: 'less-loader', 
+                    options: {
+                        sourceMap: false
+                    }
+                }],
+                false,
+                '/'
+            ]
+        });
+        
+        updateProgress(75);
+        addOutput('✅ Less 转换请求已发送，等待 Worker 处理...');
+        
+    } catch (error) {
+        addOutput(`❌ Less 转换失败: ${error.message}`);
         updateStatus('转换失败', 'error');
         isWorkerRunning = false;
         updateProgress(0);

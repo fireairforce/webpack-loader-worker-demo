@@ -1,10 +1,21 @@
-// importScripts('lib-web/LoaderLoadingError.js');
-// importScripts('lib-web/loadLoader.js');
-// importScripts('lib-web/LoaderRunner.js');
+importScripts('lib-web/LoaderLoadingError.js');
+importScripts('lib-web/loadLoader.js');
+importScripts('lib-web/LoaderRunner.js');
+
+// 加载简化的 less-loader
+importScripts('loaders/less-loader-web-worker.js');
+
+// 检查 less-loader 是否加载成功
+if (typeof self.lessLoader !== 'undefined') {
+    console.log('✅ less-loader 加载成功');
+} else {
+    console.warn('⚠️ less-loader 未找到');
+}
 
 // import './lib-web/LoaderLoadingError.js';
 // import './lib-web/loadLoader.js';
 // import './lib-web/LoaderRunner.js';
+// import './loaders/less-loader-web-worker.js';
 
 self.__preloadedModules__ = {};
 self.__fileContents__ = {};
@@ -34,6 +45,7 @@ async function handleTransform(id, payload) {
         // 创建完整的 context 对象，包含所有必要的方法
         const loaderContext = {
             cwd: typeof context === 'string' ? context : (context?.cwd || '/'),
+            resourcePath: resourcePath,
             addDependency: function(file) {
                 // 添加文件依赖
                 if (!this.dependencies) this.dependencies = [];
@@ -65,10 +77,85 @@ async function handleTransform(id, payload) {
             },
             cacheable: function(flag) {
                 this.cacheableFlag = flag !== false;
+            },
+            // 添加 less-loader 需要的方法
+            getOptions: function(schema) {
+                return query || {};
+            },
+            async: function() {
+                return function(err, result, map) {
+                    if (err) {
+                        self.postMessage({
+                            id,
+                            error: {
+                                message: err.message,
+                                stack: err.stack
+                            }
+                        });
+                    } else {
+                        self.postMessage({
+                            id,
+                            result: {
+                                source: result,
+                                map: map
+                            }
+                        });
+                    }
+                };
+            },
+            sourceMap: sourceMap,
+            getLogger: function(name) {
+                return {
+                    error: function(msg) { console.error(`[${name}]`, msg); },
+                    warn: function(msg) { console.warn(`[${name}]`, msg); },
+                    log: function(msg) { console.log(`[${name}]`, msg); },
+                    debug: function(msg) { console.debug(`[${name}]`, msg); }
+                };
+            },
+            emitError: function(error) {
+                console.error('Loader error:', error);
+            },
+            emitWarning: function(warning) {
+                console.warn('Loader warning:', warning);
+            },
+            addDependency: function(file) {
+                if (!this.dependencies) this.dependencies = [];
+                this.dependencies.push(file);
             }
         };
         
-        // 使用 LoaderRunner 执行 loader 转换
+        // 检查是否有 less-loader
+        if (loaders.some(loader => loader.loader.includes('less-loader'))) {
+            // 直接使用 less-loader
+            if (self.lessLoader) {
+                self.postMessage({
+                    type: 'debug',
+                    message: '🔧 使用内置 less-loader 处理...'
+                });
+                
+                try {
+                    // 调用 less-loader
+                    const callback = loaderContext.async();
+                    self.lessLoader.call(loaderContext, source, callback);
+                } catch (error) {
+                    self.postMessage({
+                        id,
+                        error: {
+                            message: error.message,
+                            stack: error.stack
+                        }
+                    });
+                }
+                return;
+            } else {
+                self.postMessage({
+                    type: 'debug',
+                    message: '⚠️ less-loader 未找到，将使用 LoaderRunner 处理'
+                });
+            }
+        }
+        
+        // 使用 LoaderRunner 执行其他 loader 转换
         self.postMessage({
             type: 'debug',
             message: '🔧 开始调用 LoaderRunner.runLoaders...'
