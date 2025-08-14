@@ -37,7 +37,7 @@ function initWorker() {
     }
     
     try {
-        worker = new Worker('js/worker.js');
+        worker = new Worker('js/worker-2.js');
         addOutput('🚀 Web Worker 初始化成功');
         
         // 监听 Worker 消息

@@ -1,6 +1,10 @@
-importScripts('lib-web/LoaderLoadingError.js');
-importScripts('lib-web/loadLoader.js');
-importScripts('lib-web/LoaderRunner.js');
+// importScripts('lib-web/LoaderLoadingError.js');
+// importScripts('lib-web/loadLoader.js');
+// importScripts('lib-web/LoaderRunner.js');
+
+// import './lib-web/LoaderLoadingError.js';
+// import './lib-web/loadLoader.js';
+// import './lib-web/LoaderRunner.js';
 
 self.__preloadedModules__ = {};
 self.__fileContents__ = {};
@@ -169,7 +173,6 @@ function handleSetFileContent(id, payload) {
     }
 }
 
-// 初始化完成通知
 self.postMessage({
     type: 'ready',
     message: 'Worker initialized with built-in loader support'

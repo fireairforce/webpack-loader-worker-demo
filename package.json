@@ -6,12 +6,13 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "father build"
+    "build:worker": "rsbuild build"
   },
   "dependencies": {
     "express": "^4.18.2",
     "loader-runner": "^4.3.0",
-    "father": "4.6.1-canary.3"
+    "father": "4.6.1-canary.3",
+    "@rsbuild/core": "^1.4.13"
   },
   "pnpm": {
     "overrides": {
