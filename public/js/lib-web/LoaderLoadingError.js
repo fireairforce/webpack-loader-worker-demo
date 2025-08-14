@@ -1,6 +1,5 @@
 "use strict";
 
-// 直接定义全局类，兼容 importScripts
 class LoaderLoadingError extends Error {
 	constructor(message) {
 		super(message);

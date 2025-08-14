@@ -1,6 +1,3 @@
-// Loader 预加载器实例
-let loaderPreloader = null;
-
 // Web Worker 实例
 let worker = null;
 let isWorkerRunning = false;
@@ -33,37 +30,6 @@ function updateProgress(percent) {
     progressElement.style.width = `${percent}%`;
 }
 
-// 初始化 Loader 预加载器
-function initLoaderPreloader() {
-    if (!loaderPreloader) {
-        loaderPreloader = new LoaderPreloader();
-        addOutput('🔧 Loader 预加载器初始化成功');
-    }
-    return loaderPreloader;
-}
-
-// 预加载指定的 loader
-async function preloadLoader(loaderName) {
-    if (!loaderPreloader) {
-        initLoaderPreloader();
-    }
-    
-    try {
-        addOutput(`🔧 开始预加载 loader: ${loaderName}`);
-        const loader = await loaderPreloader.preloadLoader(loaderName);
-        
-        if (loader) {
-            addOutput(`✅ 成功预加载 loader: ${loaderName}`);
-            return loader;
-        } else {
-            throw new Error(`Failed to preload ${loaderName}`);
-        }
-    } catch (error) {
-        addOutput(`❌ 预加载 loader '${loaderName}' 失败: ${error.message}`);
-        throw error;
-    }
-}
-
 // 初始化 Web Worker
 function initWorker() {
     if (worker) {
@@ -79,7 +45,7 @@ function initWorker() {
             const { id, result, error, type } = event.data;
             
             if (type === 'ready') {
-                addOutput('✅ Worker 已就绪，可以使用 loader-runner');
+                addOutput('✅ Worker 已就绪，可以使用内置的 loader 功能');
                 return;
             } else if (type === 'debug') {
                 // 处理调试消息
@@ -192,24 +158,6 @@ async function testCSSLoader() {
 
 .header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    button: pointer;
-    transition: all 0.3s ease;
-}
-
-.button:hover {
-    background: var(--primary-color-dark);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     padding: 30px;
     text-align: center;
@@ -218,53 +166,15 @@ async function testCSSLoader() {
 }`;
 
     isWorkerRunning = true;
-    updateStatus('预加载 css-loader...', 'working');
+    updateStatus('开始转换...', 'working');
     updateProgress(25);
     addOutput('🧪 开始测试 CSS Loader...');
     addOutput(`📄 CSS 内容长度: ${cssContent.length} 字符`);
-    addOutput('🔧 先预加载 css-loader，然后传递给 Worker');
+    addOutput('🔧 Worker 将使用内置的 css-loader 功能');
 
     try {
-        // 先预加载 css-loader
+        // 直接开始转换，Worker 使用内置的 loader 功能
         updateProgress(50);
-        const cssLoader = await preloadLoader('css-loader');
-        
-        // 将预加载的 loader 传递给 Worker
-        updateProgress(75);
-        worker.postMessage({
-            messageType: 'preloadModule',
-            id: 'preload-css-loader',
-            payload: {
-                name: 'css-loader',
-                module: cssLoader.toString() // 将函数转换为字符串
-            }
-        });
-        
-        // 等待 Worker 确认预加载完成
-        await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                reject(new Error('预加载超时'));
-            }, 5000);
-            
-            const originalOnMessage = worker.onmessage;
-            worker.onmessage = function(event) {
-                if (event.data.type === 'preloadComplete' && event.data.name === 'css-loader') {
-                    clearTimeout(timeout);
-                    worker.onmessage = originalOnMessage;
-                    resolve();
-                } else if (event.data.type === 'preloadError') {
-                    clearTimeout(timeout);
-                    worker.onmessage = originalOnMessage;
-                    reject(new Error(event.data.error));
-                } else if (originalOnMessage) {
-                    originalOnMessage(event);
-                }
-            };
-        });
-        
-        // 开始转换
-        updateProgress(90);
-        addOutput('✅ css-loader 预加载完成，开始转换...');
         
         worker.postMessage({
             messageType: 'transform',
@@ -285,11 +195,80 @@ async function testCSSLoader() {
             ]
         });
         
-        updateProgress(100);
+        updateProgress(75);
+        addOutput('✅ 转换请求已发送，等待 Worker 处理...');
         
     } catch (error) {
-        addOutput(`❌ 预加载失败: ${error.message}`);
-        updateStatus('预加载失败', 'error');
+        addOutput(`❌ 转换失败: ${error.message}`);
+        updateStatus('转换失败', 'error');
+        isWorkerRunning = false;
+        updateProgress(0);
+    }
+}
+
+// 测试多个 Loader 的链式处理
+async function testLoaderChain() {
+    if (isWorkerRunning) {
+        addOutput('⚠️ Worker 正在处理中，请稍候...');
+        return;
+    }
+
+    if (!worker) {
+        if (!initWorker()) {
+            return;
+        }
+    }
+
+    const sourceContent = `/* 这是一个测试文件 */
+.button {
+    background: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+}`;
+
+    isWorkerRunning = true;
+    updateStatus('开始链式转换...', 'working');
+    updateProgress(25);
+    addOutput('🧪 开始测试 Loader 链式处理...');
+    addOutput(`📄 源内容长度: ${sourceContent.length} 字符`);
+    addOutput('🔧 Worker 将使用内置的 css-loader 和 style-loader');
+
+    try {
+        // 测试 css-loader -> style-loader 的链式处理
+        updateProgress(50);
+        
+        worker.postMessage({
+            messageType: 'transform',
+            id: 'loader-chain-test-' + Date.now(),
+            payload: [
+                sourceContent,
+                'styles.css',
+                '',
+                [
+                    { 
+                        loader: 'css-loader', 
+                        options: {
+                            modules: false,
+                            sourceMap: false
+                        }
+                    },
+                    { 
+                        loader: 'style-loader', 
+                        options: {}
+                    }
+                ],
+                false,
+                '/'
+            ]
+        });
+        
+        updateProgress(75);
+        addOutput('✅ 链式转换请求已发送，等待 Worker 处理...');
+        
+    } catch (error) {
+        addOutput(`❌ 链式转换失败: ${error.message}`);
+        updateStatus('转换失败', 'error');
         isWorkerRunning = false;
         updateProgress(0);
     }
@@ -311,12 +290,12 @@ function stopWorker() {
 
 // 页面加载完成后的初始化
 document.addEventListener('DOMContentLoaded', function() {
-    addOutput('🎉 CSS Loader 测试 Demo 已加载完成!');
+    addOutput('🎉 内置 Loader 测试 Demo 已加载完成!');
     addOutput('🧪 点击"测试 CSS Loader"按钮开始测试');
+    addOutput('🔧 Worker 将使用内置的 loader 功能');
     addOutput('📊 观察处理进度和结果输出');
     
-    // 初始化预加载器和 Worker
-    initLoaderPreloader();
+    // 初始化 Worker
     initWorker();
 });
 
